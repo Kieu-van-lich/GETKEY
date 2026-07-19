@@ -26,7 +26,7 @@ export default async function handler(req, res) {
         // 2. The URL we want layma to redirect to after successful bypass
         const host = req.headers.host;
         const protocol = host.includes('localhost') ? 'http' : 'https';
-        const returnUrl = `${protocol}://${host}/api/verify_link?session=${sessionToken}`;
+        const returnUrl = `${protocol}://${host}/api/verify_link.js?session=${sessionToken}`;
 
         // 3. Generate Layma URL
         let redirectUrl = returnUrl; 
