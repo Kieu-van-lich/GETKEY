@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 // Call generate_link without HWID
-                const response = await fetch(`/api/generate_link?game=${encodeURIComponent(gameId)}`);
+                const response = await fetch(`/api/generate_link.js?game=${encodeURIComponent(gameId)}`);
                 const data = await response.json();
 
                 if (data.success && data.redirect_url) {
