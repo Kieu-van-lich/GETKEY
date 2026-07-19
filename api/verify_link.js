@@ -20,11 +20,14 @@ function getDailyKey() {
     const vnTime = new Date(utcTime + (3600000 * 7));
     const dateStr = vnTime.toISOString().split('T')[0]; // "YYYY-MM-DD"
 
-    // Generate MD5 hash of Date + Secret
-    const hash = crypto.createHash('md5').update(dateStr + DAILY_SECRET).digest('hex');
+    // Generate SHA-256 hash of Date + Secret
+    const hashBuffer = crypto.createHash('sha256').update(dateStr + DAILY_SECRET).digest();
     
-    // Format the key to look cool: TRIS-XXXXXX
-    return 'TRIS-' + hash.substring(0, 6).toUpperCase();
+    // Convert to base64, remove non-alphanumeric chars
+    let base64str = hashBuffer.toString('base64').replace(/[^a-zA-Z0-9]/g, '');
+    
+    // Format the key: FREEKEY_[13 chars]
+    return 'FREEKEY_' + base64str.substring(0, 13);
 }
 
 export default async function handler(req, res) {
