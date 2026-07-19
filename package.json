@@ -1,0 +1,13 @@
+{
+  "name": "tris-bypass-keys",
+  "version": "1.0.0",
+  "description": "Key system for Tris Bypass",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3",
+    "uuid": "^9.0.1"
+  }
+}
