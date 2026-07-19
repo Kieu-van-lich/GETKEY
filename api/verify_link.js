@@ -1,9 +1,14 @@
 const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-
-const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'placeholder_key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+function verifySessionToken(token) {
+    if (!token || !token.includes('-')) return false;
+    const [timestamp, hash] = token.split('-');
+    
+    // Check if session is older than 15 minutes (900,000 ms)
+    if (Date.now() - parseInt(timestamp) > 900000) return false;
+    
+    const expectedHash = crypto.createHash('md5').update(timestamp + DAILY_SECRET).digest('hex');
+    return hash === expectedHash;
+}
 
 // Secret key to generate the daily hash (User should set this in Vercel)
 const DAILY_SECRET = process.env.DAILY_SECRET || 'ONLYTRIS_SECRET_123';
@@ -34,30 +39,15 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Check if session exists
-        const { data: sessionData, error: sessionError } = await supabase
-            .from('link_sessions')
-            .select('*')
-            .eq('id', session)
-            .single();
-
-        if (sessionError || !sessionData) {
+        // 1. Verify stateless session token
+        if (!verifySessionToken(session)) {
             return res.send(getErrorHtml('Session expired or invalid. Please generate a new key.'));
         }
 
-        // Check expiration
-        if (new Date(sessionData.expires_at) < new Date()) {
-            await supabase.from('link_sessions').delete().eq('id', session);
-            return res.send(getErrorHtml('Session expired. Please try again.'));
-        }
-
-        // 2. Generate Daily Key (No DB insert needed!)
+        // 2. Generate Daily Key
         const dailyKey = getDailyKey();
 
-        // 3. Delete the used session to prevent reuse
-        await supabase.from('link_sessions').delete().eq('id', session);
-
-        // 4. Show success HTML
+        // 3. Show success HTML
         return res.send(getSuccessHtml(dailyKey));
 
     } catch (err) {

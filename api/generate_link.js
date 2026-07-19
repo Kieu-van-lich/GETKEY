@@ -1,11 +1,18 @@
-const { createClient } = require('@supabase/supabase-js');
+const crypto = require('crypto');
 
-const supabaseUrl = process.env.SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || 'placeholder_key';
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Secret key to generate the daily hash (User should set this in Vercel)
+const DAILY_SECRET = process.env.DAILY_SECRET || 'ONLYTRIS_SECRET_123';
 
 // Layma.net API Configuration (User needs to add this to Vercel Environment Variables)
 const LAYMA_API_KEY = process.env.LAYMA_API_KEY || '96d08fcbe37f17b9054b60a4993c4308';
+
+function createSessionToken() {
+    const timestamp = Date.now().toString();
+    const hash = crypto.createHash('md5').update(timestamp + DAILY_SECRET).digest('hex');
+    return `${timestamp}-${hash}`;
+}
+
+
 
 export default async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -13,20 +20,13 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Create a session in Supabase (we still need this to prevent direct access to verify_link)
-        // We drop the hwid column usage
-        const { data: session, error } = await supabase
-            .from('link_sessions')
-            .insert([{ hwid: 'daily_user' }]) // using a dummy hwid just in case the db schema requires it
-            .select()
-            .single();
-
-        if (error) throw error;
+        // 1. Create a stateless session token
+        const sessionToken = createSessionToken();
 
         // 2. The URL we want layma to redirect to after successful bypass
         const host = req.headers.host;
         const protocol = host.includes('localhost') ? 'http' : 'https';
-        const returnUrl = `${protocol}://${host}/api/verify_link?session=${session.id}`;
+        const returnUrl = `${protocol}://${host}/api/verify_link?session=${sessionToken}`;
 
         // 3. Generate Layma URL
         let redirectUrl = returnUrl; 
